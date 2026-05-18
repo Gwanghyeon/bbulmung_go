@@ -7,6 +7,8 @@ import { ArrowLeft, Flag, SkipForward, RotateCcw } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import GoBoard from "@/components/GoBoard";
 import CaptureCounter from "@/components/CaptureCounter";
+import Image from "next/image";
+import level1Image from "@/assets/images/level_1.png";
 import { boardToSgf, parseLastMoveFromSgf } from "@/lib/sgf";
 import { calculateScoreAction } from "@/app/actions/scoring";
 import type { GoBoardRef } from "@/components/GoBoard";
@@ -19,7 +21,11 @@ function GameContent() {
   const router = useRouter();
   const sizeParam = searchParams.get("size");
   const size = sizeParam ? parseInt(sizeParam, 10) : 9;
-  const opponent = searchParams.get("opponent") || "computer"; // "computer" or "human"
+  const levelParam = searchParams.get("level");
+  const level = levelParam ? parseInt(levelParam, 10) : 1;
+  const handicapParam = searchParams.get("handicap");
+  const handicap = handicapParam ? parseInt(handicapParam, 10) : 0;
+  const opponent = searchParams.get("opponent") || "computer";
 
   const [blackCaptures, setBlackCaptures] = useState(0);
   const [whiteCaptures, setWhiteCaptures] = useState(0);
@@ -30,7 +36,6 @@ function GameContent() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [scoreResult, setScoreResult] = useState<any>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [aiLevel, setAiLevel] = useState<number>(1); // 1: 초보, 5: 중수, 10: 고수
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -92,7 +97,7 @@ function GameContent() {
       if (workerRef.current) {
         workerRef.current.terminate();
       }
-      workerRef.current = new Worker(new URL(`/workers/gnugoWorker.js?level=${aiLevel}`, window.location.href));
+      workerRef.current = new Worker(new URL(`/workers/gnugoWorker.js?level=${level}`, window.location.href));
       workerRef.current.onmessage = (e) => {
         if (e.data.type === "ready") {
           console.log("GNU Go Worker is ready.");
@@ -118,7 +123,7 @@ function GameContent() {
     return () => {
       workerRef.current?.terminate();
     };
-  }, [opponent, aiLevel]); // aiLevel이 바뀔 때 워커 재생성
+  }, [opponent, level]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -170,7 +175,7 @@ function GameContent() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center p-4">
+    <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center">
       <header className="w-full max-w-4xl flex justify-between items-center py-4 mb-4">
         <button
           onClick={() => router.push("/menu")}
@@ -180,14 +185,14 @@ function GameContent() {
           <span>메뉴로</span>
         </button>
         <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-          AI와 대결 ({size}x{size})
+          AI와 대결 · Lv.{level} ({size}×{size})
         </h1>
         <div className="w-20" /> {/* Spacer for centering */}
       </header>
 
-      <main className="w-full max-w-4xl flex flex-col lg:flex-row gap-8 items-center lg:items-start justify-center">
-        {/* Board Section */}
-        <div className="flex-1 w-full max-w-[800px] relative">
+      <main className="w-full flex-1 flex flex-col items-center justify-center px-4 py-4 gap-5 overflow-auto">
+        {/* 바둑판 + 캐릭터 컨테이너 (3-1, 3-2) */}
+        <div className="relative w-full max-w-[560px]">
           {toastMessage && (
             <motion.div 
               initial={{ opacity: 0, y: -20, x: "-50%" }}
@@ -211,69 +216,57 @@ function GameContent() {
           )}
           <GoBoard 
             ref={boardRef} 
-            size={size} 
+            size={size}
+            handicap={handicap}
             onMove={handleMove} 
             lastMove={lastMove}
             disabled={isAiThinking || isGameOver}
           />
+          {/* 캐릭터 이미지 (3-2): 바둑판 우측 하단에 absolute로 겹쳐 배치 */}
+          <div className="pointer-events-none absolute bottom-2 right-2 z-10">
+            <Image
+              src={level1Image}
+              alt="뿔멍 캐릭터"
+              width={120}
+              height={180}
+              className="object-contain drop-shadow-2xl"
+              style={{ width: "auto", height: "clamp(90px, 18vw, 160px)" }}
+              priority
+            />
+          </div>
         </div>
 
-        {/* Info & Controls Section */}
-        <div className="flex flex-row lg:flex-col gap-6 w-full lg:w-64">
-          <div className="flex flex-row lg:flex-col gap-4 flex-1">
-            <CaptureCounter color="black" count={whiteCaptures} /> {/* 흑이 따낸 백돌 */}
-            <CaptureCounter color="white" count={blackCaptures} /> {/* 백이 따낸 흑돌 */}
-          </div>
+        {/* 따낸 돌 카운터 */}
+        <div className="flex gap-6 items-center">
+          <CaptureCounter color="black" count={whiteCaptures} />
+          <CaptureCounter color="white" count={blackCaptures} />
+        </div>
 
-          {/* AI Difficulty Selector */}
-          {opponent === "computer" && !isGameOver && (
-            <div className="w-full bg-white/5 rounded-2xl p-4 border border-white/10 shadow-xl backdrop-blur-sm lg:mb-4">
-              <h3 className="text-white/80 font-medium mb-3 text-center text-sm">🤖 AI 난이도 조절</h3>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setAiLevel(1)}
-                  className={`w-full py-2 px-1 rounded-xl text-sm font-bold transition-all ${aiLevel === 1 ? 'bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)] scale-105' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
-                >
-                  🐥 병아리 (초보)
-                </button>
-                <button
-                  onClick={() => setAiLevel(5)}
-                  className={`w-full py-2 px-1 rounded-xl text-sm font-bold transition-all ${aiLevel === 5 ? 'bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.5)] scale-105' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
-                >
-                  🐶 강아지 (중수)
-                </button>
-                <button
-                  onClick={() => setAiLevel(10)}
-                  className={`w-full py-2 px-1 rounded-xl text-sm font-bold transition-all ${aiLevel === 10 ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-105' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
-                >
-                  🐯 호랑이 (고수)
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 lg:grid-cols-1 gap-4">
-            <button className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-colors group">
-              <RotateCcw className="w-6 h-6 mb-2 text-neutral-400 group-hover:text-blue-400" />
-              <span className="text-sm font-medium">무르기</span>
-            </button>
-            <button 
-              onClick={handlePass}
-              disabled={isAiThinking || isGameOver}
-              className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl transition-colors group"
-            >
-              <SkipForward className="w-6 h-6 mb-2 text-neutral-400 group-hover:text-yellow-400" />
-              <span className="text-sm font-medium">한수쉼</span>
-            </button>
-            <button 
-              onClick={handleResign}
-              disabled={isAiThinking || isGameOver}
-              className="flex flex-col items-center justify-center p-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl transition-colors group"
-            >
-              <Flag className="w-6 h-6 mb-2 text-red-400 group-hover:text-red-300" />
-              <span className="text-sm font-medium text-red-200">기권</span>
-            </button>
-          </div>
+        {/* 하단 컨트롤러 (3-3) */}
+        <div className="w-full max-w-[560px] grid grid-cols-3 gap-3">
+          <button
+            disabled={isAiThinking || isGameOver}
+            className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl transition-colors group"
+          >
+            <RotateCcw className="w-6 h-6 mb-1 text-neutral-400 group-hover:text-blue-400" />
+            <span className="text-sm font-medium">무르기</span>
+          </button>
+          <button 
+            onClick={handlePass}
+            disabled={isAiThinking || isGameOver}
+            className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl transition-colors group"
+          >
+            <SkipForward className="w-6 h-6 mb-1 text-neutral-400 group-hover:text-yellow-400" />
+            <span className="text-sm font-medium">한수쉼</span>
+          </button>
+          <button 
+            onClick={handleResign}
+            disabled={isAiThinking || isGameOver}
+            className="flex flex-col items-center justify-center p-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl transition-colors group"
+          >
+            <Flag className="w-6 h-6 mb-1 text-red-400 group-hover:text-red-300" />
+            <span className="text-sm font-medium text-red-200">기권</span>
+          </button>
         </div>
       </main>
 

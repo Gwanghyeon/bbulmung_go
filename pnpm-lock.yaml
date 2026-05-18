@@ -8,9 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@sabaki/deadstones':
+        specifier: ^2.1.2
+        version: 2.1.2
+      '@sabaki/go-board':
+        specifier: ^1.4.3
+        version: 1.4.3
       '@sabaki/sgf':
         specifier: ^3.4.7
         version: 3.4.7
+      '@sabaki/shudan':
+        specifier: ^1.7.1
+        version: 1.7.1(preact@10.29.1)
       framer-motion:
         specifier: ^12.38.0
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -444,8 +453,19 @@ packages:
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
 
+  '@sabaki/deadstones@2.1.2':
+    resolution: {integrity: sha512-C2lmvm6VEFwZwRd8rNSYxVikVXCBmy3MYsC6ZdmexEuH3q9Ha/oKfGSZEczI3kZLz/64vZ7s2ST/wJHpR193lQ==}
+
+  '@sabaki/go-board@1.4.3':
+    resolution: {integrity: sha512-tXonP7vw7bYcXKSVrN1bhkb/QQi5EfTbDSflBffSp2iabbFbz4JyhEyw0ekbuwR0ntBq6iHky6BfCGF69Z4ttg==}
+
   '@sabaki/sgf@3.4.7':
     resolution: {integrity: sha512-513CQMEejYVqaIKWK+P3AL1TXv2cqdUVOI+3mJDGcDEw5fWlz8puEYn+aQrGjnxJrn5XUUX0fefndEJbam65Sw==}
+
+  '@sabaki/shudan@1.7.1':
+    resolution: {integrity: sha512-wny2PbKAt2gET+6m/Ov5Q/0Xyjbz+UoV/z/eVMsq0rKVxH63/Gm5LDcxVkahbAdAZxKTsvxIjEPnIOSrDUmzNg==}
+    peerDependencies:
+      preact: ^8.4.2 || 10.x
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
@@ -852,6 +872,9 @@ packages:
   chalk@4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
+
+  classnames@2.5.1:
+    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
 
   client-only@0.0.1:
     resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
@@ -1706,6 +1729,9 @@ packages:
     resolution: {integrity: sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  preact@10.29.1:
+    resolution: {integrity: sha512-gQCLc/vWroE8lIpleXtdJhTFDogTdZG9AjMUpVkDf2iTCNwYNWA+u16dL41TqUDJO4gm2IgrcMv3uTpjd4Pwmg==}
+
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
@@ -2363,12 +2389,21 @@ snapshots:
 
   '@rtsao/scc@1.1.0': {}
 
+  '@sabaki/deadstones@2.1.2': {}
+
+  '@sabaki/go-board@1.4.3': {}
+
   '@sabaki/sgf@3.4.7':
     dependencies:
       doken: 1.0.2
     optionalDependencies:
       iconv-lite: 0.4.24
       jschardet: 2.3.0
+
+  '@sabaki/shudan@1.7.1(preact@10.29.1)':
+    dependencies:
+      classnames: 2.5.1
+      preact: 10.29.1
 
   '@swc/helpers@0.5.15':
     dependencies:
@@ -2768,6 +2803,8 @@ snapshots:
     dependencies:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
+
+  classnames@2.5.1: {}
 
   client-only@0.0.1: {}
 
@@ -3738,6 +3775,8 @@ snapshots:
       nanoid: 3.3.12
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  preact@10.29.1: {}
 
   prelude-ls@1.2.1: {}
 

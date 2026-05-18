@@ -53,8 +53,8 @@ export default function LoginPage() {
               priority
             />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">
-            뿔멍 바둑
+          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2 font-[family-name:var(--font-jua)]">
+            뿔멍바둑
           </h1>
           <p className="text-neutral-400 text-center">
             비밀번호를 입력하고 게임을 시작하세요!

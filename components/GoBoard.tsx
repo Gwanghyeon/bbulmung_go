@@ -4,11 +4,48 @@ import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHand
 import { Goban } from "@sabaki/shudan";
 import Board from "@sabaki/go-board";
 import type { Sign } from "@sabaki/go-board";
-import { render, h } from "preact";
 import "@sabaki/shudan/css/goban.css";
+import type React from "react";
+
+// 표준 접바둑 배치 좌표 [col, row] (0-indexed)
+const HANDICAP_POSITIONS: Record<number, Record<number, [number, number][]>> = {
+  9: {
+    2: [[6, 2], [2, 6]],
+    3: [[6, 2], [2, 6], [6, 6]],
+    4: [[2, 2], [6, 2], [2, 6], [6, 6]],
+    5: [[2, 2], [6, 2], [4, 4], [2, 6], [6, 6]],
+    6: [[2, 2], [6, 2], [2, 4], [6, 4], [2, 6], [6, 6]],
+  },
+  13: {
+    2: [[9, 3], [3, 9]],
+    3: [[9, 3], [3, 9], [9, 9]],
+    4: [[3, 3], [9, 3], [3, 9], [9, 9]],
+    5: [[3, 3], [9, 3], [6, 6], [3, 9], [9, 9]],
+    6: [[3, 3], [9, 3], [3, 6], [9, 6], [3, 9], [9, 9]],
+  },
+  19: {
+    2: [[15, 3], [3, 15]],
+    3: [[15, 3], [3, 15], [15, 15]],
+    4: [[3, 3], [15, 3], [3, 15], [15, 15]],
+    5: [[3, 3], [15, 3], [9, 9], [3, 15], [15, 15]],
+    6: [[3, 3], [15, 3], [3, 9], [15, 9], [3, 15], [15, 15]],
+  },
+};
+
+const createInitialBoard = (size: number, handicap: number = 0): Board => {
+  const signMap = Array.from({ length: size }, () => Array(size).fill(0)) as Sign[][];
+  if (handicap >= 2) {
+    const positions = HANDICAP_POSITIONS[size]?.[handicap] ?? [];
+    for (const [col, row] of positions) {
+      if (row < size && col < size) signMap[row][col] = 1;
+    }
+  }
+  return new Board(signMap);
+};
 
 interface GoBoardProps {
   size: number;
+  handicap?: number;
   onMove?: (board: Board, currentPlayer: Sign, vertex: [number, number]) => void;
   lastMove?: [number, number] | null;
   disabled?: boolean;
@@ -20,14 +57,11 @@ export interface GoBoardRef {
   getBoard: () => Board;
 }
 
-const createEmptyBoard = (size: number) => {
-  return new Board(Array.from({ length: size }, () => Array(size).fill(0)));
-};
-
-const GoBoard = forwardRef<GoBoardRef, GoBoardProps>(({ size, onMove, lastMove, disabled }, ref) => {
+const GoBoard = forwardRef<GoBoardRef, GoBoardProps>(({ size, handicap = 0, onMove, lastMove, disabled }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [board, setBoard] = useState(() => createEmptyBoard(size));
-  const [currentPlayer, setCurrentPlayer] = useState<Sign>(1); // 1: Black, -1: White
+  const [board, setBoard] = useState(() => createInitialBoard(size, handicap));
+  // 접바둑 2개 이상이면 흑이 먼저 배치(setup)한 후 백이 먼저 착수
+  const [currentPlayer, setCurrentPlayer] = useState<Sign>(() => (handicap >= 2 ? -1 : 1));
 
   const markerMap = useMemo(() => {
     if (!lastMove) return undefined;
@@ -36,11 +70,11 @@ const GoBoard = forwardRef<GoBoardRef, GoBoardProps>(({ size, onMove, lastMove, 
     return map;
   }, [size, lastMove]);
 
-  // When size changes, reset the board
+  // size 또는 handicap이 바뀌면 보드 초기화
   useEffect(() => {
-    setBoard(createEmptyBoard(size));
-    setCurrentPlayer(1);
-  }, [size]);
+    setBoard(createInitialBoard(size, handicap));
+    setCurrentPlayer(handicap >= 2 ? -1 : 1);
+  }, [size, handicap]);
 
   const handleVertexClick = useCallback(
     (evt: any, vertex: [number, number]) => {
@@ -107,38 +141,27 @@ const GoBoard = forwardRef<GoBoardRef, GoBoardProps>(({ size, onMove, lastMove, 
     return () => observer.disconnect();
   }, [size]);
 
-  // Render Preact component into React DOM
-  useEffect(() => {
-    if (containerRef.current) {
-      const vnode = h(Goban as any, {
-        signMap: board.signMap,
-        markerMap: markerMap,
-        showCoordinates: false, // 사용자 요청: 좌표(A B C, 1 2 3) 비활성화
-        vertexSize: vertexSize, // 계산된 반응형 사이즈 적용
-        onVertexClick: handleVertexClick,
-      });
-      render(vnode, containerRef.current);
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      if (containerRef.current) {
-        render(null, containerRef.current);
-      }
-    };
-  }, [board, vertexSize, handleVertexClick]);
+  const GobanComponent = Goban as React.ComponentType<{
+    signMap: number[][];
+    markerMap?: (null | { type: string })[][] | undefined;
+    showCoordinates?: boolean;
+    vertexSize?: number;
+    onVertexClick?: (evt: unknown, vertex: [number, number]) => void;
+  }>;
 
   return (
     <div className="w-full flex justify-center items-center p-4 bg-neutral-800 rounded-3xl shadow-2xl border border-white/5 overflow-hidden">
-      {/* 
-        여기에 p-4 sm:p-8을 주어 바둑판이 박스 벽면에 꽉 끼지 않고 
-        여백을 가지면서 예쁘게 반응형으로 줄어들게 합니다! 
-      */}
-      <div 
-        className="w-full max-w-[800px] aspect-square p-4 sm:p-8 md:p-10 flex justify-center items-center" 
+      <div
+        className="w-full max-w-[800px] aspect-square p-4 sm:p-8 md:p-10 flex justify-center items-center"
         ref={containerRef}
       >
-        {/* Preact will mount here */}
+        <GobanComponent
+          signMap={board.signMap}
+          markerMap={markerMap ?? undefined}
+          showCoordinates={false}
+          vertexSize={vertexSize}
+          onVertexClick={handleVertexClick}
+        />
       </div>
     </div>
   );
